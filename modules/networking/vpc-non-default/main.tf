@@ -10,6 +10,7 @@ resource "aws_vpc" "vpc-non-default" {
     Name        = "vpc-${var.environment}"
     environment = var.environment
     Createdby   = "terraform"
+    Type        = "webapp-vpc"
   }
 }
 
@@ -25,7 +26,7 @@ resource "aws_internet_gateway" "vpc_igw" {
 
 resource "aws_subnet" "vpc_subnet_servers_a" {
   vpc_id                  = aws_vpc.vpc-non-default.id
-  cidr_block              = cidrsubnet(var.vpc_cider, 8, 0)
+  cidr_block              = cidrsubnet(var.vpc_cidr, 8, 0)
   availability_zone       = var.availability_zone_a
   map_public_ip_on_launch = false
 
@@ -39,7 +40,7 @@ resource "aws_subnet" "vpc_subnet_servers_a" {
 
 resource "aws_subnet" "vpc_subnet_servers_b" {
   vpc_id                  = aws_vpc.vpc-non-default.id
-  cidr_block              = cidrsubnet(var.vpc_cider, 8, 1)
+  cidr_block              = cidrsubnet(var.vpc_cidr, 8, 1)
   availability_zone       = var.availability_zone_b
   map_public_ip_on_launch = false
 
@@ -53,7 +54,7 @@ resource "aws_subnet" "vpc_subnet_servers_b" {
 
 resource "aws_subnet" "vpc_subnet_load_balancers_a" {
   vpc_id            = aws_vpc.vpc-non-default.id
-  cidr_block        = cidrsubnet(var.vpc_cider, 8, 2)
+  cidr_block        = cidrsubnet(var.vpc_cidr, 8, 2)
   availability_zone = var.availability_zone_a
 
   tags = {
@@ -66,7 +67,7 @@ resource "aws_subnet" "vpc_subnet_load_balancers_a" {
 
 resource "aws_subnet" "vpc_subnet_load_balancers_b" {
   vpc_id            = aws_vpc.vpc-non-default.id
-  cidr_block        = cidrsubnet(var.vpc_cider, 8, 3)
+  cidr_block        = cidrsubnet(var.vpc_cidr, 8, 3)
   availability_zone = var.availability_zone_b
 
   tags = {
@@ -79,7 +80,7 @@ resource "aws_subnet" "vpc_subnet_load_balancers_b" {
 
 resource "aws_subnet" "vpc_subnet_rds_a" {
   vpc_id            = aws_vpc.vpc-non-default.id
-  cidr_block        = cidrsubnet(var.vpc_cider, 8, 4)
+  cidr_block        = cidrsubnet(var.vpc_cidr, 8, 4)
   availability_zone = var.availability_zone_a
 
   tags = {
@@ -92,7 +93,7 @@ resource "aws_subnet" "vpc_subnet_rds_a" {
 
 resource "aws_subnet" "vpc_subnet_rds_b" {
   vpc_id            = aws_vpc.vpc-non-default.id
-  cidr_block        = cidrsubnet(var.vpc_cider, 8, 5)
+  cidr_block        = cidrsubnet(var.vpc_cidr, 8, 5)
   availability_zone = var.availability_zone_b
 
   tags = {

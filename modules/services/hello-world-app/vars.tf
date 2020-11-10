@@ -3,12 +3,7 @@
 # A value must be provided for these parameters
 # ------------------------------------------------------------------
 
-variable vpc_id {
-  description = "id attribute of the vpc used for the deployment"
-  type        = string
-}
-
-variable environment {
+variable "environment" {
   description = "the name of the environment the app is deploying to"
   type        = string
 }
@@ -43,8 +38,8 @@ variable "db_remote_state_bucket_region" {
   type        = string
 }
 
-variable "ami" {
-  description = "The AMI to run in the cluster"
+variable "rds_security_group_id" {
+  description = "The security group id for the rds instances"
   type        = string
 }
 

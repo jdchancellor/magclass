@@ -12,3 +12,8 @@ variable "subnet_ids" {
   description = "The subnet ids for the ALB to deploy into"
   type        = list(string)
 }
+
+variable "vpc_id" {
+  description = "The vpc_id where the security_group resides"
+  type        = string
+}

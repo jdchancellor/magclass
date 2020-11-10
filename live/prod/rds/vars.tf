@@ -23,3 +23,9 @@ variable "db_username" {
   type        = string
   default     = "admin"
 }
+
+variable "environment" {
+  description = "Environment type used to set the tags.  Typical names are stage, prod, dev, test"
+  type        = string
+  default     = "prod"
+}

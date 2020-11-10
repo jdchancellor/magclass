@@ -39,12 +39,13 @@ resource "aws_lb_listener" "http" {
 }
 
 resource "aws_security_group" "alb" {
-  name = var.alb_name
+  name   = var.alb_name
+  vpc_id = var.vpc_id
 }
 
 resource "aws_security_group_rule" "allow_http_inbound" {
   type              = "ingress"
-  security_group_id = aws_security_group.alb.security_group_id
+  security_group_id = aws_security_group.alb.id
 
   from_port   = local.http_port
   to_port     = local.http_port
@@ -55,7 +56,7 @@ resource "aws_security_group_rule" "allow_http_inbound" {
 
 resource "aws_security_group_rule" "allow_all_outbound" {
   type              = "egress"
-  security_group_id = aws_security_group.alb.security_group_id
+  security_group_id = aws_security_group.alb.id
 
   from_port   = local.any_port
   to_port     = local.any_port

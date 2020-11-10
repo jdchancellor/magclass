@@ -12,7 +12,7 @@ provider "aws" {
 terraform {
   backend "s3" {
     bucket         = "jdchancellor-terraform-state"
-    key            = "/live/prod/vpc/terraform.tfstate"
+    key            = "live/prod/vpc/terraform.tfstate"
     region         = "us-west-2"
     dynamodb_table = "terraform-state-locks"
     encrypt        = true

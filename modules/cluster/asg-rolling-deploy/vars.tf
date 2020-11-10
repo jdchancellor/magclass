@@ -38,6 +38,16 @@ variable "enable_autoscaling" {
   type        = bool
 }
 
+variable "rds_security_group_id" {
+  description = "The security group id for the rds instances"
+  type        = string
+}
+
+variable "vpc_id" {
+  description = "The vpc_id where the security_group resides"
+  type        = string
+}
+
 # ------------------------------------------------------------------
 # OPTIONAL PARAMETERS
 # These parameters have reasonable defaults

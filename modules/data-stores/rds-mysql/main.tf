@@ -1,9 +1,9 @@
 terraform {
-  required_version = ">=0.13, >0.14"
+  required_version = ">=0.13, <0.14"
 }
 
 resource "aws_db_instance" "webapp-rds" {
-  identifier-prefix   = "webapp"
+  identifier_prefix   = "webapp"
   engine              = "mysql"
   allocated_storage   = 10
   instance_class      = "db.t2.micro"
@@ -23,15 +23,6 @@ resource "aws_security_group" "rds" {
     environment = var.environment
     Createdby   = "terraform"
   }
-}
-
-resource "aws_security_group_rule" "mysql_inbound" {
-  type                     = "ingress"
-  from_port                = 3306
-  to_port                  = 3306
-  protocol                 = "tcp"
-  source_security_group_id = var.server_security_group_id
-  security_group_id        = aws_security_group.rds.id
 }
 
 resource "aws_security_group_rule" "rds_outbound" {

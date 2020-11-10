@@ -2,6 +2,12 @@ terraform {
   required_version = ">=0.13, <0.14"
 }
 
+locals {
+  tcp_protocol  = "tcp"
+  all_ips       = ["0.0.0.0/0"]
+  http_protocol = "HTTP"
+}
+
 data "template_file" "user_data" {
   template = file("${path.module}/user-data.sh")
 
@@ -24,7 +30,7 @@ data "terraform_remote_state" "db" {
 }
 
 data "aws_subnet_ids" "alb" {
-  vpc_id = var.vpc_id
+  vpc_id = data.aws_vpc.vpc.id
 
   tags = {
     Type = "loadbalancers"
@@ -32,24 +38,72 @@ data "aws_subnet_ids" "alb" {
 }
 
 data "aws_subnet_ids" "asg" {
-  vpc_id = var.vpc_id
+  vpc_id = data.aws_vpc.vpc.id
 
   tags = {
     Type = "instances"
   }
 }
 
+data "aws_vpc" "vpc" {
+  tags = {
+    Type        = "webapp-vpc"
+    environment = var.environment
+  }
+}
+
+#get the latest AMI version for aws-linux
+data "aws_ami" "aws-linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn-ami-hvm*"]
+  }
+
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+data "aws_ami" "ubuntu" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  owners = ["099720109477"] # Canonical
+}
+
+
+
 module "asg" {
   source = "../../cluster/asg-rolling-deploy"
 
   cluster_name  = "hello-world-${var.environment}-asg"
-  ami           = var.ami
+  ami           = data.aws_ami.ubuntu.id
   user_data     = data.template_file.user_data.rendered
   instance_type = var.instance_type
+  vpc_id        = data.aws_vpc.vpc.id
 
-  min_size           = var.min_size
-  max_size           = var.max_size
-  enable_autoscaling = var.enable_autoscaling
+  min_size              = var.min_size
+  max_size              = var.max_size
+  enable_autoscaling    = var.enable_autoscaling
+  rds_security_group_id = var.rds_security_group_id
 
   subnet_ids        = data.aws_subnet_ids.asg.ids
   target_group_arns = [aws_lb_target_group.asg.arn]
@@ -63,13 +117,14 @@ module "alb" {
 
   alb_name   = "hello-world-${var.environment}-alb"
   subnet_ids = data.aws_subnet_ids.alb.ids
+  vpc_id     = data.aws_vpc.vpc.id
 }
 
 resource "aws_lb_target_group" "asg" {
-  name     = "hello-world-${var.environment}-asg-target-group"
+  name     = "hello-world-${var.environment}"
   port     = var.server_port
   protocol = local.http_protocol
-  vpc_id   = var.vpc_id
+  vpc_id   = data.aws_vpc.vpc.id
 
   health_check {
     path                = "/"
@@ -88,7 +143,7 @@ resource "aws_lb_listener_rule" "asg" {
 
   condition {
     path_pattern {
-      value = ["*"]
+      values = ["*"]
     }
   }
 

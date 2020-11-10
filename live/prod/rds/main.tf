@@ -12,16 +12,26 @@ provider "aws" {
 terraform {
   backend "s3" {
     bucket         = "jdchancellor-terraform-state"
-    key            = "/live/prod/rds/terraform.tfstate"
+    key            = "live/prod/rds/terraform.tfstate"
     region         = "us-west-2"
     dynamodb_table = "terraform-state-locks"
     encrypt        = true
   }
 }
 
+data "aws_vpc" "vpc" {
+  tags = {
+    Type        = "webapp-vpc"
+    environment = var.environment
+  }
+}
+
+
 module "rds" {
   source = "../../../modules/data-stores/rds-mysql"
 
+  vpc_id      = data.aws_vpc.vpc.id
+  environment = var.environment
   db_name     = var.db_name
   db_username = var.db_username
   db_password = var.db_password

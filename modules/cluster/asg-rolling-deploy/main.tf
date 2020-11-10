@@ -4,16 +4,18 @@ terraform {
 
 
 locals {
-  tcp_protocol = "tcp"
-  all_ips      = ["0.0.0.0/0"]
+  tcp_protocol  = "tcp"
+  all_ips       = ["0.0.0.0/0"]
+  http_protocol = "HTTP"
 }
 
 
 resource "aws_launch_configuration" "web_instance" {
   image_id        = var.ami
   instance_type   = var.instance_type
-  security_groups = [aws_security_group.instance.id]
+  security_groups = [aws_security_group.web_instances.id]
   user_data       = var.user_data
+  key_name        = "jonclass"
 
   # Required when using a launch configuration with an auto-scaling group 
   # https://www.terraform.io/docs/providers/aws/r/launch_configuration.html
@@ -51,7 +53,7 @@ resource "aws_autoscaling_group" "web_cluster" {
   tag {
     key                 = "Name"
     value               = var.cluster_name
-    propogate_at_launch = true
+    propagate_at_launch = true
   }
 
   # Create a dynamic set of tags using the map in var.custom_tags
@@ -65,7 +67,7 @@ resource "aws_autoscaling_group" "web_cluster" {
     content {
       key                 = tag.key
       value               = tag.value
-      propogate_at_launch = true
+      propagate_at_launch = true
     }
   }
 
@@ -77,37 +79,39 @@ resource "aws_autoscaling_schedule" "business_hours_scale_out" {
   # by setting the count to 0 when enable_autoscaling is false, this rule is not created
   count = var.enable_autoscaling ? 1 : 0
 
-  scheduled_action_name      = "${var.cluster_name}-business-hours-scale-out"
-  min_size                   = 2
-  max_size                   = 10
-  desired_capacity           = 10
-  recurrence                 = "0 9 * * *"
-  aws_autoscaling_group_name = aws_autoscaling_group.web_cluster.name
+  scheduled_action_name  = "${var.cluster_name}-business-hours-scale-out"
+  min_size               = 2
+  max_size               = 10
+  desired_capacity       = 10
+  recurrence             = "0 9 * * *"
+  autoscaling_group_name = aws_autoscaling_group.web_cluster.name
 }
 
 
-resource "aws_autoscaling_schedule" "business_hours_scale_out" {
+resource "aws_autoscaling_schedule" "after_hours_scale_in" {
   # A conditional is used to manage autoscaling schedules for environments that require them
   # by setting the count to 0 when enable_autoscaling is false, this rule is not createdg
   count = var.enable_autoscaling ? 1 : 0
 
-  scheduled_action_name      = "${var.cluster_name}-after-hours-scale-in"
-  min_size                   = 2
-  max_size                   = 10
-  desired_capacity           = 2
-  recurrence                 = "0 17 * * *"
-  aws_autoscaling_group_name = aws_autoscaling_group.web_cluster.name
+  scheduled_action_name  = "${var.cluster_name}-after-hours-scale-in"
+  min_size               = 2
+  max_size               = 10
+  desired_capacity       = 2
+  recurrence             = "0 17 * * *"
+  autoscaling_group_name = aws_autoscaling_group.web_cluster.name
 }
 
 
 resource "aws_security_group" "web_instances" {
-  name = "${var.cluster_name}-instance-secgroup"
+  name   = "${var.cluster_name}-instance-secgroup"
+  vpc_id = var.vpc_id
+
 }
 
 
 resource "aws_security_group_rule" "allow_server_http_inbound" {
   type              = "ingress"
-  security_group_id = aws_security_group.web_instance.image_id
+  security_group_id = aws_security_group.web_instances.id
 
   from_port   = var.server_port
   to_port     = var.server_port
@@ -115,6 +119,34 @@ resource "aws_security_group_rule" "allow_server_http_inbound" {
   cidr_blocks = local.all_ips
 }
 
+resource "aws_security_group_rule" "allow_server_ssh_inbound" {
+  type              = "ingress"
+  security_group_id = aws_security_group.web_instances.id
+
+  from_port   = 22
+  to_port     = 22
+  protocol    = local.tcp_protocol
+  cidr_blocks = local.all_ips
+}
+
+resource "aws_security_group_rule" "allow_server_all_outbound" {
+  type              = "egress"
+  security_group_id = aws_security_group.web_instances.id
+
+  from_port   = 0
+  to_port     = 0
+  protocol    = "-1"
+  cidr_blocks = local.all_ips
+}
+
+resource "aws_security_group_rule" "mysql_inbound" {
+  type                     = "ingress"
+  from_port                = 3306
+  to_port                  = 3306
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.web_instances.id
+  security_group_id        = var.rds_security_group_id
+}
 
 resource "aws_cloudwatch_metric_alarm" "high_cpu_utilization" {
   alarm_name  = "${var.cluster_name}-high-cpu-utilization"

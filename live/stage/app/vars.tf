@@ -12,7 +12,7 @@ variable "db_remote_state_bucket" {
 variable "db_remote_state_key" {
   description = "The path for the databases remote state in s3"
   type        = string
-  default     = "/live/stage/rds/terraform.tfstate"
+  default     = "live/stage/rds/terraform.tfstate"
 }
 
 variable "db_remote_state_bucket_region" {
